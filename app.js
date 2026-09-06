@@ -31,21 +31,32 @@ const viewer = new Cesium.Viewer('cesiumContainer', {
 viewer.scene.fog.enabled = false;
 viewer.scene.globe.showWaterEffect = false;
 
-// 3. KOORDINAT DESA SIDODADI, KECAMATAN TELUK PANDAN, PESAWARAN
-const longitudeSidodadi = 105.255;
-const latitudeSidodadi = -5.560;
-const ketinggianKamera = 3000; 
-
-viewer.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(longitudeSidodadi, latitudeSidodadi, ketinggianKamera),
+// 3. PENGATURAN KAMERA & TOMBOL HOME KABUPATEN PESAWARAN
+// Mengatur koordinat dan ketinggian agar mencakup area Teluk Pandan / Pesawaran
+const posisiKameraPesawaran = {
+    destination: Cesium.Cartesian3.fromDegrees(105.265, -5.565, 12000), // Ketinggian 12.000 meter untuk cakupan luas
     orientation: {
         heading: Cesium.Math.toRadians(0.0), 
-        pitch: Cesium.Math.toRadians(-45.0), 
+        pitch: Cesium.Math.toRadians(-90.0), // Sudut -90 derajat untuk tampilan lurus dari atas (2D-like)
         roll: 0.0
-    },
-    duration: 3 
-});
+    }
+};
 
+// A. Tampilan Awal saat Web Dibuka (Tanpa animasi terbang dari luar angkasa)
+viewer.camera.setView(posisiKameraPesawaran);
+
+// B. Mengambil Alih Fungsi Tombol Home (Pojok Kanan Atas)
+viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e) {
+    // Membatalkan perintah bawaan Cesium (zoom out ke seluruh bumi)
+    e.cancel = true; 
+    
+    // Menerbangkan kamera kembali ke Pesawaran dengan animasi mulus 1.5 detik
+    viewer.camera.flyTo({
+        destination: posisiKameraPesawaran.destination,
+        orientation: posisiKameraPesawaran.orientation,
+        duration: 1.5 
+    });
+});
 // 4. FUNGSI UNTUK MEMUAT SKENARIO BANJIR
 let currentFloodLayer = null;
 
