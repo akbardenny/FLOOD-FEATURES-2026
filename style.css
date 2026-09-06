@@ -1,0 +1,77 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#cesiumContainer {
+    width: 100%;
+    height: 100%;
+}
+
+.control-panel {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    width: 280px;
+    z-index: 10; /* Agar panel selalu berada di atas peta */
+    backdrop-filter: blur(5px);
+}
+
+.control-panel h2 {
+    margin: 0 0 5px 0;
+    color: #004080;
+    font-size: 22px;
+}
+
+.control-panel p {
+    margin: 0 0 15px 0;
+    font-size: 13px;
+    color: #555;
+}
+
+.control-panel h3 {
+    font-size: 15px;
+    margin-bottom: 12px;
+    color: #333;
+}
+
+button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #2980b9;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background-color: #1c5980;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid #ccc;
+    margin: 15px 0;
+}
+
+.keterangan {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f1f8ff;
+    border-left: 4px solid #2980b9;
+    border-radius: 3px;
+    font-size: 12px;
+}
