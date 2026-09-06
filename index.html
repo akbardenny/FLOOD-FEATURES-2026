@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLOOD FUTURES - WebGIS 3D Desa Sidodadi</title>
+    
+    <!-- Memanggil Library CesiumJS -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    
+    <!-- Memanggil file desain Anda -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Kontainer untuk Peta 3D -->
+    <div id="cesiumContainer"></div>
+    
+    <!-- Panel Kontrol Skenario -->
+    <div class="control-panel">
+        <h2>FLOOD FUTURES</h2>
+        <p>Desa Sidodadi, Teluk Pandan, Pesawaran</p>
+        <hr>
+        <h3>Skenario Genangan Banjir</h3>
+        <button onclick="loadFlood('normal')">Kondisi Normal</button>
+        <button onclick="loadFlood('skenario1')">Skenario 1 (Risiko Rendah)</button>
+        <button onclick="loadFlood('skenario3')">Skenario 3 (Risiko Sedang)</button>
+        <button onclick="loadFlood('skenario5')">Skenario 5 (Risiko Ekstrem)</button>
+        
+        <div class="keterangan">
+            <p><strong>Note:</strong> Pilih skenario untuk melihat simulasi genangan air secara 3D.</p>
+        </div>
+    </div>
+
+    <!-- Memanggil file logika peta Anda -->
+    <script src="app.js"></script>
+</body>
+</html>
