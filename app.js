@@ -2,16 +2,13 @@
 // APP.JS - Logika Utama WebGIS FLOOD FUTURES Desa Sidodadi
 // =====================================================================
 
-// 1. TOKEN CESIUM ION (Opsional tapi direkomendasikan untuk nanti)
-// Jika Anda sudah mendaftar di ion.cesium.com, hapus tanda // di bawah ini
-// dan masukkan token Anda agar bisa menggunakan 3D Terrain (kontur daratan)
-// Cesium.Ion.defaultAccessToken = 'MASUKKAN_TOKEN_ANDA_DI_SINI';
+// 1. TOKEN CESIUM ION (Sudah diaktifkan menggunakan token Anda)
+Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6Im5TNXBqdkt0bVUzU3QyajAiLCJqdGkiOiI2ZmJiYWY3NS0wMTY3LTRhNGUtOTQzNy1mMzkxNzE0MTIzYzciLCJpZCI6NDgyMTUxLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODg3MjI1ODJ9.NF82kA2F5o3X0lt19I5AQWBVGTog8tyV7Uiv9tm7DNU';
 
 // 2. INISIALISASI PETA 3D (VIEWER)
 const viewer = new Cesium.Viewer('cesiumContainer', {
-    // PERHATIAN: terrainProvider dimatikan sementara agar peta tidak putih (blank).
-    // Jika Anda sudah memiliki token di atas, Anda bisa menghapus tanda // di bawah ini:
-    // terrainProvider: Cesium.createWorldTerrain(), 
+    // Fitur kontur 3D (gunung/bukit) sudah diaktifkan kembali
+    terrainProvider: Cesium.createWorldTerrain(), 
     
     animation: false,            // Menyembunyikan tombol play animasi di pojok kiri bawah
     timeline: false,             // Menyembunyikan garis waktu (timeline) di bagian bawah
