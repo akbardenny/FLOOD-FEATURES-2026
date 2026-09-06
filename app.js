@@ -1,77 +1,90 @@
-// Opsional: Masukkan Access Token Cesium Ion Anda di sini nanti
-// Cesium.Ion.defaultAccessToken = 'TOKEN_ANDA_NANTI';
+// =====================================================================
+// APP.JS - Logika Utama WebGIS FLOOD FUTURES Desa Sidodadi
+// =====================================================================
 
-// Inisialisasi Peta 3D (Viewer)
+// 1. TOKEN CESIUM ION (Opsional tapi direkomendasikan untuk nanti)
+// Jika Anda sudah mendaftar di ion.cesium.com, hapus tanda // di bawah ini
+// dan masukkan token Anda agar bisa menggunakan 3D Terrain (kontur daratan)
+// Cesium.Ion.defaultAccessToken = 'MASUKKAN_TOKEN_ANDA_DI_SINI';
+
+// 2. INISIALISASI PETA 3D (VIEWER)
 const viewer = new Cesium.Viewer('cesiumContainer', {
-    terrainProvider: Cesium.createWorldTerrain(), // Gunakan terrain bawaan dulu
-    animation: false,       // Sembunyikan tombol animasi
-    timeline: false,        // Sembunyikan garis waktu (timeline) bawah
-    homeButton: true,
-    navigationHelpButton: false,
-    baseLayerPicker: true   // Biarkan pengguna bisa ganti peta satelit/jalan
+    // PERHATIAN: terrainProvider dimatikan sementara agar peta tidak putih (blank).
+    // Jika Anda sudah memiliki token di atas, Anda bisa menghapus tanda // di bawah ini:
+    // terrainProvider: Cesium.createWorldTerrain(), 
+    
+    animation: false,            // Menyembunyikan tombol play animasi di pojok kiri bawah
+    timeline: false,             // Menyembunyikan garis waktu (timeline) di bagian bawah
+    homeButton: true,            // Menampilkan tombol navigasi "Home"
+    navigationHelpButton: false, // Menyembunyikan tombol panduan navigasi
+    baseLayerPicker: true        // Mengizinkan pengguna mengganti jenis peta dasar (satelit/jalan)
 });
 
-// KOORDINAT DESA SIDODADI, PESAWARAN
+// 3. KOORDINAT DESA SIDODADI, KECAMATAN TELUK PANDAN, PESAWARAN
 const longitudeSidodadi = 105.255;
 const latitudeSidodadi = -5.560;
-const ketinggianKamera = 2500; // Dalam meter
+const ketinggianKamera = 3000; // Ketinggian kamera dari permukaan tanah (dalam meter)
 
-// Menerbangkan kamera ke Desa Sidodadi saat web dibuka
+// Menerbangkan kamera ke Desa Sidodadi secara otomatis saat web dibuka
 viewer.camera.flyTo({
     destination: Cesium.Cartesian3.fromDegrees(longitudeSidodadi, latitudeSidodadi, ketinggianKamera),
     orientation: {
-        heading: Cesium.Math.toRadians(0.0), // Arah Utara
-        pitch: Cesium.Math.toRadians(-45.0), // Sudut kemiringan kamera 45 derajat melihat ke bawah
+        heading: Cesium.Math.toRadians(0.0), // Arah hadap kompas (0 = Utara)
+        pitch: Cesium.Math.toRadians(-45.0), // Sudut kemiringan kamera (menunduk 45 derajat)
         roll: 0.0
     },
-    duration: 3 // Lama durasi terbang dalam detik
+    duration: 3 // Lama transisi animasi terbang dari luar angkasa ke desa (dalam detik)
 });
 
-// Variabel untuk menyimpan data banjir yang sedang aktif
+// 4. FUNGSI UNTUK MEMUAT SKENARIO BANJIR
+// Variabel untuk menyimpan data banjir yang sedang tampil di layar
 let currentFloodLayer = null;
 
-// Fungsi untuk memuat skenario dari folder data/
 async function loadFlood(skenario) {
-    // 1. Jika ada layer banjir sebelumnya, hapus dulu agar tidak menumpuk
+    // A. Hapus layer skenario banjir sebelumnya jika ada (agar air tidak menumpuk)
     if (currentFloodLayer) {
         viewer.dataSources.remove(currentFloodLayer);
         currentFloodLayer = null;
     }
 
-    // 2. Jika tombol yang ditekan adalah "Kondisi Normal", hentikan fungsi (peta bersih)
+    // B. Jika pengguna menekan tombol "Kondisi Normal", peta dibiarkan bersih
     if (skenario === 'normal') {
         return;
     }
 
     try {
-        // 3. Panggil file GeoJSON sesuai nama skenario (contoh: data/skenario1.geojson)
+        // C. Memanggil file GeoJSON dari folder 'data' di dalam GitHub Anda
+        // Pastikan nama file Anda sudah sesuai, contoh: data/skenario1.geojson
         const dataSource = await Cesium.GeoJsonDataSource.load(`data/${skenario}.geojson`, {
-            clampToGround: true // Menempel pada kontur tanah
+            clampToGround: true // Membuat poligon genangan air menempel mengikuti bentuk permukaan tanah
         });
 
-        // 4. Ubah warna poligon menjadi biru transparan layaknya air
+        // D. Mengatur tampilan warna poligon menjadi seperti air banjir
         const entities = dataSource.entities.values;
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
             
+            // Pastikan tipe datanya adalah poligon (area genangan)
             if (entity.polygon) {
-                // Warna biru air dengan transparansi 60%
+                // Memberikan warna biru air laut/banjir (#3498db) dengan transparansi 60% (0.6)
                 entity.polygon.material = Cesium.Color.fromCssColorString('#3498db').withAlpha(0.6);
                 
-                // Jika Anda punya atribut "kedalaman" di QGIS, gunakan ini untuk ketebalan air 3D
-                // Hapus tanda garis miring ganda (//) di bawah ini jika data GeoJSON Anda sudah siap
+                // (Opsi 3D Tingkat Lanjut) 
+                // Jika data atribut GeoJSON Anda dari QGIS memiliki kolom bernama "kedalaman", 
+                // hapus tanda // pada baris di bawah ini untuk membuat genangan airnya timbul/menebal:
                 // entity.polygon.extrudedHeight = entity.properties.kedalaman; 
             }
         }
 
-        // 5. Tambahkan layer yang sudah diwarnai ke dalam peta
+        // E. Tampilkan data skenario yang sudah diwarnai ke dalam peta
         viewer.dataSources.add(dataSource);
         
-        // 6. Simpan informasi layer ini agar bisa dihapus saat ganti skenario
+        // F. Simpan ke dalam variabel currentFloodLayer 
         currentFloodLayer = dataSource;
 
     } catch (error) {
+        // Menampilkan pesan error pop-up jika file GeoJSON tidak ditemukan
         console.error("Gagal memuat data skenario:", error);
-        alert(`File data/${skenario}.geojson belum tersedia di GitHub Anda.`);
+        alert(`Gagal menampilkan! Pastikan Anda sudah membuat dan mengunggah file ${skenario}.geojson ke dalam folder 'data' di GitHub Anda.`);
     }
 }
