@@ -1,3 +1,7 @@
+/* ==========================================================
+   STYLE.CSS - Desain Tampilan WebGIS (Responsive)
+   ========================================================== */
+
 body, html {
     margin: 0;
     padding: 0;
@@ -12,6 +16,7 @@ body, html {
     height: 100%;
 }
 
+/* TAMPILAN DEFAULT (UNTUK LAPTOP / PC) */
 .control-panel {
     position: absolute;
     top: 20px;
@@ -21,8 +26,9 @@ body, html {
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     width: 280px;
-    z-index: 10; /* Agar panel selalu berada di atas peta */
+    z-index: 10; 
     backdrop-filter: blur(5px);
+    box-sizing: border-box;
 }
 
 .control-panel h2 {
@@ -74,4 +80,28 @@ hr {
     border-left: 4px solid #2980b9;
     border-radius: 3px;
     font-size: 12px;
+}
+
+/* ==========================================================
+   TAMPILAN KHUSUS UNTUK HP DAN TABLET
+   ========================================================== */
+@media screen and (max-width: 768px) {
+    .control-panel {
+        top: auto;          /* Menghilangkan jarak dari atas */
+        bottom: 0;          /* Memindahkan panel ke paling bawah layar */
+        left: 0;
+        width: 100%;        /* Membuat lebar panel memenuhi layar HP */
+        border-radius: 20px 20px 0 0; /* Membuat sudut atas melengkung seperti aplikasi HP */
+        padding: 15px;
+        max-height: 45vh;   /* Maksimal tinggi panel 45% dari layar HP agar peta tetap terlihat */
+        overflow-y: auto;   /* Panel bisa di-scroll jika tombolnya banyak */
+    }
+    
+    .control-panel h2 {
+        font-size: 18px;    /* Mengecilkan judul sedikit */
+    }
+    
+    button {
+        padding: 8px;       /* Membuat tombol sedikit lebih ramping */
+    }
 }
