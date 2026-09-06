@@ -5,17 +5,31 @@
 // 1. TOKEN CESIUM ION 
 Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6Im5TNXBqdkt0bVUzU3QyajAiLCJqdGkiOiI2ZmJiYWY3NS0wMTY3LTRhNGUtOTQzNy1mMzkxNzE0MTIzYzciLCJpZCI6NDgyMTUxLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODg3MjI1ODJ9.NF82kA2F5o3X0lt19I5AQWBVGTog8tyV7Uiv9tm7DNU';
 
-// 2. INISIALISASI PETA 3D (VIEWER)
+// 2. INISIALISASI PETA 3D (VIEWER) - VERSI SUPER RINGAN
 const viewer = new Cesium.Viewer('cesiumContainer', {
-    // INI ADALAH KODE BARU UNTUK MEMANGGIL TERRAIN DI VERSI TERBARU
-    terrain: Cesium.Terrain.fromWorldTerrain(), 
+    // Memuat kontur dengan mematikan efek cahaya dan pantulan air laut asli yang berat
+    terrain: Cesium.Terrain.fromWorldTerrain({
+        requestWaterMask: false,
+        requestVertexNormals: false
+    }), 
     
+    // Mematikan tombol-tombol UI yang tidak perlu agar web lebih ringan
     animation: false,            
     timeline: false,             
     homeButton: true,            
     navigationHelpButton: false, 
-    baseLayerPicker: true        
+    baseLayerPicker: false,      // Dimatikan sementara agar tidak meload banyak gambar peta
+    geocoder: false,
+    sceneModePicker: false,
+
+    // KUNCI ANTI-LAG: Peta hanya di-render saat kamera digerakkan
+    requestRenderMode: true,
+    maximumRenderTimeChange: Infinity
 });
+
+// Matikan efek kabut atmosfer resolusi tinggi
+viewer.scene.fog.enabled = false;
+viewer.scene.globe.showWaterEffect = false;
 
 // 3. KOORDINAT DESA SIDODADI, KECAMATAN TELUK PANDAN, PESAWARAN
 const longitudeSidodadi = 105.255;
