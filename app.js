@@ -2,16 +2,12 @@
 // APP.JS - Logika Utama WebGIS FLOOD FUTURES Desa Sidodadi
 // =====================================================================
 
-// 1. TOKEN CESIUM ION ANDA
+// 1. TOKEN CESIUM ION
 Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6Im5TNXBqdkt0bVUzU3QyajAiLCJqdGkiOiI2ZmJiYWY3NS0wMTY3LTRhNGUtOTQzNy1mMzkxNzE0MTIzYzciLCJpZCI6NDgyMTUxLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODg3MjI1ODJ9.NF82kA2F5o3X0lt19I5AQWBVGTog8tyV7Uiv9tm7DNU';
 
-// 2. INISIALISASI PETA 3D MENGGUNAKAN DTM SIDODADI (ID: 5826956) - VERSI STABIL
+// 2. INISIALISASI PETA 3D MENGGUNAKAN TERRAIN BAWAAN GLOBAL
 const viewer = new Cesium.Viewer('cesiumContainer', {
-    // Memanggil terrain DTM Anda dengan cara standar yang paling aman
-    terrainProvider: new Cesium.CesiumTerrainProvider({
-        url: Cesium.IonResource.fromAssetId(5826956) 
-    }),
-    
+    terrain: Cesium.Terrain.fromWorldTerrain(),
     animation: false,            
     timeline: false,             
     homeButton: true,            
