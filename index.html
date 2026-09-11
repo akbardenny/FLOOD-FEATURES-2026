@@ -9,6 +9,9 @@
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     
+    <!-- Memanggil Library Turf.js untuk Analisis Jalur Evakuasi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+    
     <!-- Memanggil file desain Anda -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,19 +19,24 @@
     <!-- Kontainer untuk Peta 3D -->
     <div id="cesiumContainer"></div>
     
-    <!-- Panel Kontrol Skenario -->
+    <!-- Panel Kontrol Skenario & Mitigasi -->
     <div class="control-panel">
         <h2>FLOOD FUTURES</h2>
         <p>Desa Sidodadi, Teluk Pandan, Pesawaran</p>
         <hr>
         <h3>Skenario Genangan Banjir</h3>
         <button onclick="loadFlood('normal')">Kondisi Normal</button>
-        <button onclick="loadFlood('skenario1')">Skenario 1 (Risiko Rendah)</button>
-        <button onclick="loadFlood('skenario3')">Skenario 3 (Risiko Sedang)</button>
-        <button onclick="loadFlood('skenario5')">Skenario 5 (Risiko Ekstrem)</button>
+        <button onclick="loadFlood('skenario1')">Banjir Rendah (Risiko Rendah)</button>
+        <button onclick="loadFlood('skenario3')">Banjir Sedang (Risiko Sedang)</button>
+        <button onclick="loadFlood('skenario3')">Banjir Tinggi (Risiko Tinggi)</button>
+        <button onclick="loadFlood('skenario5')">Banjir Esktrem (Risiko Bahaya)</button>
         
+        <hr>
+        <h3>Mitigasi & Evakuasi</h3>
+        <button onclick="loadEvacuationRoute()" style="background-color: #e74c3c;">Tampilkan Jalur Evakuasi</button>
+
         <div class="keterangan">
-            <p><strong>Note:</strong> Pilih skenario untuk melihat simulasi genangan air secara 3D.</p>
+            <p><strong>Note:</strong> Pilih skenario atau jalur evakuasi untuk melihat simulasi 3D.</p>
         </div>
     </div>
 
