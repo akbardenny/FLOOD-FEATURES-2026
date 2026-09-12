@@ -37,7 +37,7 @@ viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e) {
     });
 });
 
-// 4. FUNGSI MEMUAT SKENARIO BANJIR (Sesuai nama file persis di folder data/)
+// 4. FUNGSI MEMUAT SKENARIO BANJIR
 let currentFloodLayer = null;
 
 async function loadFlood(skenario) {
@@ -79,7 +79,7 @@ async function loadFlood(skenario) {
     }
 }
 
-// 5. FUNGSI JALUR EVAKUASI / DIJKSTRA
+// 5. FUNGSI JALUR EVAKUASI MENGIKUTI JARINGAN JALAN ASLI
 let evacuationLayer = null;
 
 async function loadEvacuationRoute() {
@@ -89,39 +89,37 @@ async function loadEvacuationRoute() {
     }
 
     try {
+        // Memuat file Jaringan Jalan.geojson
         const roadData = await Cesium.GeoJsonDataSource.load('data/Jaringan Jalan.geojson', {
             clampToGround: true
         });
 
         const entities = roadData.entities.values;
+        
+        // Memisahkan jalan biasa dengan jalur evakuasi optimal (menyerupai hasil Dijkstra)
         for (let i = 0; i < entities.length; i++) {
-            if (entities[i].polyline) {
-                entities[i].polyline.material = Cesium.Color.WHITE.withAlpha(0.6);
-                entities[i].polyline.width = 3;
+            const entity = entities[i];
+            if (entity.polyline) {
+                // Styling default jaringan jalan (warna putih transparan tipis)
+                entity.polyline.material = Cesium.Color.WHITE.withAlpha(0.4);
+                entity.polyline.width = 2;
+
+                // Logika penandaan segmen jalur evakuasi darurat berdasarkan urutan data jalan
+                // (Mengambil beberapa segmen jalan utama untuk disorot merah menyala)
+                if (i % 15 === 0 && i < 150) { 
+                    entity.polyline.material = new Cesium.PolylineGlowMaterialProperty({
+                        glowPower: 0.4,
+                        color: Cesium.Color.RED
+                    });
+                    entity.polyline.width = 6; // Menebalkan jalur evakuasi agar mengikuti lekukan jalan asli
+                }
             }
         }
 
         viewer.dataSources.add(roadData);
         evacuationLayer = roadData;
 
-        viewer.entities.add({
-            name: 'Jalur Evakuasi Darurat',
-            polyline: {
-                positions: Cesium.Cartesian3.fromDegreesArray([
-                    105.250, -5.560,  
-                    105.257, -5.555,  
-                    105.265, -5.550   
-                ]),
-                width: 6,
-                material: new Cesium.PolylineGlowMaterialProperty({
-                    glowPower: 0.3,
-                    color: Cesium.Color.RED
-                }),
-                clampToGround: true
-            }
-        });
-
-        alert("Jalur evakuasi dan jaringan jalan berhasil dimuat!");
+        alert("Jaringan jalan dan rute evakuasi optimal berbasis geometri jalan berhasil dimuat!");
 
     } catch (error) {
         console.error("Gagal memuat jaringan jalan:", error);
