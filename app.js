@@ -27,7 +27,6 @@ const posisiKameraPesawaran = {
 
 viewer.camera.setView(posisiKameraPesawaran);
 
-// Tombol Home kembali ke Pesawaran
 viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e) {
     e.cancel = true; 
     viewer.camera.flyTo({
@@ -60,9 +59,12 @@ function setActiveButton(clickedButton) {
     }
 }
 
-// 4. FUNGSI MEMUAT SKENARIO BANJIR (DENGAN PERCEPATAN RENDER TANPA LOOP BERAT)
+// Variabel Global untuk Menyimpan Status Skenario Aktif
 let currentFloodLayer = null;
+let currentFloodFileName = null; // Menyimpan nama file skenario yang sedang aktif
+let evacuationLayer = null;
 
+// 4. FUNGSI MEMUAT SKENARIO BANJIR
 async function loadFlood(skenario, buttonElement) {
     setActiveButton(buttonElement);
 
@@ -72,6 +74,7 @@ async function loadFlood(skenario, buttonElement) {
     }
 
     if (skenario === 'normal') {
+        currentFloodFileName = null;
         return; 
     }
 
@@ -88,10 +91,10 @@ async function loadFlood(skenario, buttonElement) {
         namaSkenario = 'Skenario Genangan Tinggi (1.5 m)';
     }
 
+    currentFloodFileName = fileName; // Catat skenario yang sedang aktif
     showLoading(true, `Memproses ${namaSkenario}...`);
 
     try {
-        // Menggunakan parameter langsung di load() agar Cesium merender warna secara masal tanpa proses loop script yang lambat
         const dataSource = await Cesium.GeoJsonDataSource.load(`data/${fileName}`, {
             clampToGround: true,
             stroke: Cesium.Color.TRANSPARENT,
@@ -110,9 +113,7 @@ async function loadFlood(skenario, buttonElement) {
     }
 }
 
-// 5. FUNGSI JALUR EVAKUASI
-let evacuationLayer = null;
-
+// 5. FUNGSI ANALISIS RUTE EVAKUASI ADAPTIF BERBASIS TURF.JS (MENGHINDARI GENANGAN)
 async function loadEvacuationRoute(buttonElement) {
     if (evacuationLayer) {
         viewer.dataSources.remove(evacuationLayer);
@@ -121,26 +122,83 @@ async function loadEvacuationRoute(buttonElement) {
         return;
     }
 
-    showLoading(true, "Memuat Jaringan Jalan & Jalur Evakuasi...");
+    showLoading(true, "Menganalisis Jalur Evakuasi Aman terhadap Banjir...");
 
     try {
-        const roadData = await Cesium.GeoJsonDataSource.load('data/Jaringan Jalan v2.geojson', {
+        // 1. Muat Jaringan Jalan
+        const roadResponse = await fetch('data/jaringan_jalan_v2.geojson');
+        const roadGeoJson = await roadResponse.json();
+
+        // 2. Jika ada skenario banjir aktif, muat juga data genangannya untuk dianalisis
+        let floodGeoJson = null;
+        if (currentFloodFileName) {
+            try {
+                const floodResponse = await fetch(`data/${currentFloodFileName}`);
+                floodGeoJson = await floodResponse.json();
+            } catch (e) {
+                console.warn("Gagal memuat file genangan untuk analisis benturan rute.");
+            }
+        }
+
+        // 3. Proses Analisis Spasial menggunakan Turf.js
+        const processedRoads = {
+            type: "FeatureCollection",
+            features: roadGeoJson.features.map(roadFeature => {
+                let isFlooded = false;
+
+                // Jika ada genangan, cek apakah ruas jalan beririsan/masuk ke dalam area genangan
+                if (floodGeoJson && roadFeature.geometry) {
+                    for (let floodFeature of floodGeoJson.features) {
+                        if (floodFeature.geometry) {
+                            try {
+                                // Menggunakan turf untuk mendeteksi persimpangan/genangan pada jalan
+                                const intersects = turf.booleanIntersects(roadFeature, floodFeature);
+                                if (intersects) {
+                                    isFlooded = true;
+                                    break;
+                                }
+                            } catch (err) {
+                                // Abaikan error geometri kecil
+                            }
+                        }
+                    }
+                }
+
+                // Berikan properti kustom berdasarkan status genangan
+                roadFeature.properties = roadFeature.properties || {};
+                roadFeature.properties.stroke = isFlooded ? '#e74c3c' : '#2ecc71'; // Merah jika tergenang, Hijau jika aman
+                roadFeature.properties['stroke-width'] = isFlooded ? 2 : 5;       // Jalan aman dibuat lebih tebal
+                roadFeature.properties['stroke-opacity'] = isFlooded ? 0.2 : 0.9;   // Jalan tergenang dibuat pudar transparan
+
+                return roadFeature;
+            })
+        };
+
+        // 4. Muat hasil analisis ke Cesium
+        const roadData = await Cesium.GeoJsonDataSource.load(processedRoads, {
             clampToGround: true
         });
 
         const entities = roadData.entities.values;
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
-            if (entity.polyline) {
-                entity.polyline.material = Cesium.Color.WHITE.withAlpha(0.4);
-                entity.polyline.width = 2;
+            if (entity.polyline && entity.properties) {
+                // Ambil warna dan ketebalan dari hasil analisis Turf.js di atas
+                const strokeColor = entity.properties.stroke ? entity.properties.stroke.getValue() : '#2ecc71';
+                const strokeWidth = entity.properties['stroke-width'] ? entity.properties['stroke-width'].getValue() : 3;
+                const strokeOpacity = entity.properties['stroke-opacity'] ? entity.properties['stroke-opacity'].getValue() : 0.8;
 
-                if (i % 15 === 0 && i < 150) { 
+                if (strokeColor === '#2ecc71') {
+                    // Jalur Aman (Hijau Menyala & Tebal)
                     entity.polyline.material = new Cesium.PolylineGlowMaterialProperty({
-                        glowPower: 0.4,
-                        color: Cesium.Color.RED
+                        glowPower: 0.5,
+                        color: Cesium.Color.fromCssColorString('#2ecc71')
                     });
-                    entity.polyline.width = 6; 
+                    entity.polyline.width = 6;
+                } else {
+                    // Jalur Terendam (Merah Pudar)
+                    entity.polyline.material = Cesium.Color.fromCssColorString('#e74c3c').withAlpha(strokeOpacity);
+                    entity.polyline.width = 2;
                 }
             }
         }
@@ -150,8 +208,8 @@ async function loadEvacuationRoute(buttonElement) {
         buttonElement.classList.add('active'); 
 
     } catch (error) {
-        console.error("Gagal memuat jaringan jalan:", error);
-        alert("Pastikan file Jaringan Jalan v2.geojson ada di dalam folder 'data/'.");
+        console.error("Gagal menganalisis rute evakuasi:", error);
+        alert("Terjadi kesalahan saat memproses rute evakuasi adaptif.");
     } finally {
         showLoading(false);
     }
