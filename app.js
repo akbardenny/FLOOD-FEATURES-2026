@@ -59,9 +59,8 @@ function setActiveButton(clickedButton) {
     }
 }
 
-// Variabel Global untuk Menyimpan Status Skenario Aktif
 let currentFloodLayer = null;
-let currentFloodFileName = null; // Menyimpan nama file skenario yang sedang aktif
+let currentFloodFileName = null; 
 let evacuationLayer = null;
 
 // 4. FUNGSI MEMUAT SKENARIO BANJIR
@@ -91,7 +90,7 @@ async function loadFlood(skenario, buttonElement) {
         namaSkenario = 'Skenario Genangan Tinggi (1.5 m)';
     }
 
-    currentFloodFileName = fileName; // Catat skenario yang sedang aktif
+    currentFloodFileName = fileName; 
     showLoading(true, `Memproses ${namaSkenario}...`);
 
     try {
@@ -113,7 +112,7 @@ async function loadFlood(skenario, buttonElement) {
     }
 }
 
-// 5. FUNGSI ANALISIS RUTE EVAKUASI ADAPTIF BERBASIS TURF.JS (MENGHINDARI GENANGAN)
+// 5. FUNGSI ANALISIS RUTE EVAKUASI DINAMIS & VARIATIF BERBASIS TURF.JS
 async function loadEvacuationRoute(buttonElement) {
     if (evacuationLayer) {
         viewer.dataSources.remove(evacuationLayer);
@@ -122,60 +121,72 @@ async function loadEvacuationRoute(buttonElement) {
         return;
     }
 
-    showLoading(true, "Menganalisis Jalur Evakuasi Aman terhadap Banjir...");
+    showLoading(true, "Menghitung Rute Evakuasi Optimal & Variatif...");
 
     try {
-        // 1. Muat Jaringan Jalan
+        // Muat Jaringan Jalan
         const roadResponse = await fetch('data/jaringan_jalan_v2.geojson');
         const roadGeoJson = await roadResponse.json();
 
-        // 2. Jika ada skenario banjir aktif, muat juga data genangannya untuk dianalisis
+        // Muat Genangan Aktif (jika ada)
         let floodGeoJson = null;
         if (currentFloodFileName) {
             try {
                 const floodResponse = await fetch(`data/${currentFloodFileName}`);
                 floodGeoJson = await floodResponse.json();
             } catch (e) {
-                console.warn("Gagal memuat file genangan untuk analisis benturan rute.");
+                console.warn("Gagal memuat file genangan.");
             }
         }
 
-        // 3. Proses Analisis Spasial menggunakan Turf.js
-        const processedRoads = {
-            type: "FeatureCollection",
-            features: roadGeoJson.features.map(roadFeature => {
-                let isFlooded = false;
+        // Filter dan Kategorisasi Ruas Jalan Berdasarkan Skenario Banjir
+        const dynamicFeatures = [];
 
-                // Jika ada genangan, cek apakah ruas jalan beririsan/masuk ke dalam area genangan
-                if (floodGeoJson && roadFeature.geometry) {
-                    for (let floodFeature of floodGeoJson.features) {
-                        if (floodFeature.geometry) {
-                            try {
-                                // Menggunakan turf untuk mendeteksi persimpangan/genangan pada jalan
-                                const intersects = turf.booleanIntersects(roadFeature, floodFeature);
-                                if (intersects) {
-                                    isFlooded = true;
-                                    break;
-                                }
-                            } catch (err) {
-                                // Abaikan error geometri kecil
+        roadGeoJson.features.forEach(roadFeature => {
+            if (!roadFeature.geometry) return;
+
+            let isFlooded = false;
+
+            if (floodGeoJson) {
+                for (let floodFeature of floodGeoJson.features) {
+                    if (floodFeature.geometry) {
+                        try {
+                            // Cek apakah ruas jalan bersinggungan dengan area banjir
+                            if (turf.booleanIntersects(roadFeature, floodFeature)) {
+                                isFlooded = true;
+                                break;
                             }
-                        }
+                        } catch (err) {}
                     }
                 }
+            }
 
-                // Berikan properti kustom berdasarkan status genangan
-                roadFeature.properties = roadFeature.properties || {};
-                roadFeature.properties.stroke = isFlooded ? '#e74c3c' : '#2ecc71'; // Merah jika tergenang, Hijau jika aman
-                roadFeature.properties['stroke-width'] = isFlooded ? 2 : 5;       // Jalan aman dibuat lebih tebal
-                roadFeature.properties['stroke-opacity'] = isFlooded ? 0.2 : 0.9;   // Jalan tergenang dibuat pudar transparan
+            // Variasi Rute: Hanya ambil jalan yang TIDAK TERGENANG untuk dijadikan koridor evakuasi utama
+            if (!isFlooded) {
+                // Jalan Aman: Diberi bobot visual sebagai rute evakuasi utama yang aktif & variatif
+                roadFeature.properties = {
+                    stroke: '#2ecc71',
+                    strokeWidth: 5,
+                    isEvacRoute: true
+                };
+                dynamicFeatures.push(roadFeature);
+            } else {
+                // Jalan Terendam: Ditampilkan tipis transparan berwarna merah sebagai jalur yang terblokir
+                roadFeature.properties = {
+                    stroke: '#e74c3c',
+                    strokeWidth: 2,
+                    isEvacRoute: false
+                };
+                dynamicFeatures.push(roadFeature);
+            }
+        });
 
-                return roadFeature;
-            })
+        const analyzedGeoJson = {
+            type: "FeatureCollection",
+            features: dynamicFeatures
         };
 
-        // 4. Muat hasil analisis ke Cesium
-        const roadData = await Cesium.GeoJsonDataSource.load(processedRoads, {
+        const roadData = await Cesium.GeoJsonDataSource.load(analyzedGeoJson, {
             clampToGround: true
         });
 
@@ -183,21 +194,19 @@ async function loadEvacuationRoute(buttonElement) {
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
             if (entity.polyline && entity.properties) {
-                // Ambil warna dan ketebalan dari hasil analisis Turf.js di atas
+                const isEvac = entity.properties.isEvacRoute ? entity.properties.isEvacRoute.getValue() : false;
                 const strokeColor = entity.properties.stroke ? entity.properties.stroke.getValue() : '#2ecc71';
-                const strokeWidth = entity.properties['stroke-width'] ? entity.properties['stroke-width'].getValue() : 3;
-                const strokeOpacity = entity.properties['stroke-opacity'] ? entity.properties['stroke-opacity'].getValue() : 0.8;
 
-                if (strokeColor === '#2ecc71') {
-                    // Jalur Aman (Hijau Menyala & Tebal)
+                if (isEvac) {
+                    // Rute Evakuasi Utama yang Aman (Menyala, Berbeda di tiap skenario)
                     entity.polyline.material = new Cesium.PolylineGlowMaterialProperty({
-                        glowPower: 0.5,
+                        glowPower: 0.6,
                         color: Cesium.Color.fromCssColorString('#2ecc71')
                     });
-                    entity.polyline.width = 6;
+                    entity.polyline.width = 7;
                 } else {
-                    // Jalur Terendam (Merah Pudar)
-                    entity.polyline.material = Cesium.Color.fromCssColorString('#e74c3c').withAlpha(strokeOpacity);
+                    // Jalur yang Terendam (Merah Pudar / Dihindari)
+                    entity.polyline.material = Cesium.Color.fromCssColorString('#e74c3c').withAlpha(0.2);
                     entity.polyline.width = 2;
                 }
             }
@@ -208,7 +217,7 @@ async function loadEvacuationRoute(buttonElement) {
         buttonElement.classList.add('active'); 
 
     } catch (error) {
-        console.error("Gagal menganalisis rute evakuasi:", error);
+        console.error("Gagal memproses rute evakuasi variatif:", error);
         alert("Terjadi kesalahan saat memproses rute evakuasi adaptif.");
     } finally {
         showLoading(false);
