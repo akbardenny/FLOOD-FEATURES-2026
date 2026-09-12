@@ -112,7 +112,7 @@ async function loadFlood(skenario, buttonElement) {
     }
 }
 
-// 5. FUNGSI JALUR EVAKUASI AMAN & VARIATIF TANPA ERROR
+// 5. FUNGSI JALUR EVAKUASI AMAN & VARIATIF (MENGGUNAKAN NAMA FILE ASLI DI GITHUB)
 async function loadEvacuationRoute(buttonElement) {
     if (evacuationLayer) {
         viewer.dataSources.remove(evacuationLayer);
@@ -124,37 +124,33 @@ async function loadEvacuationRoute(buttonElement) {
     showLoading(true, "Memuat Jaringan Jalan & Jalur Evakuasi...");
 
     try {
-        // Memuat file jaringan jalan langsung dengan aman
-        const roadData = await Cesium.GeoJsonDataSource.load('data/jaringan_jalan_v2.geojson', {
+        // Menggunakan nama file persis sesuai yang ada di screenshot github Anda sebelumnya: "Jaringan Jalan v2.geojson"
+        const roadData = await Cesium.GeoJsonDataSource.load('data/Jaringan Jalan v2.geojson', {
             clampToGround: true
         });
 
         const entities = roadData.entities.values;
         
-        // Membuat variasi rute berdasarkan skenario yang sedang dipilih user
-        // (Setiap skenario akan memberikan pola warna/cabang rute yang berbeda secara visual)
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
             if (entity.polyline) {
-                // Default jalan biasa
                 entity.polyline.material = Cesium.Color.WHITE.withAlpha(0.3);
                 entity.polyline.width = 2;
 
-                // Variasi visual jalur evakuasi berdasarkan level skenario banjir aktif
                 let modulusDivider = 15;
                 let evacColor = Cesium.Color.RED;
 
                 if (currentSkenarioName === 'rendah') {
-                    modulusDivider = 12; // Lebih banyak segmen rute alternatif
+                    modulusDivider = 12; 
                     evacColor = Cesium.Color.fromCssColorString('#2ecc71'); // Hijau aman
                 } else if (currentSkenarioName === 'sedang') {
                     modulusDivider = 18; 
                     evacColor = Cesium.Color.fromCssColorString('#f39c12'); // Oranye siaga
                 } else if (currentSkenarioName === 'tinggi') {
                     modulusDivider = 25; 
-                    evacColor = Cesium.Color.fromCssColorString('#e74c3c'); // Merah darurat evakuasi total
+                    evacColor = Cesium.Color.fromCssColorString('#e74c3c'); // Merah darurat
                 } else {
-                    evacColor = Cesium.Color.CYAN; // Kondisi normal
+                    evacColor = Cesium.Color.CYAN; 
                 }
 
                 if (i % modulusDivider === 0) { 
@@ -162,7 +158,7 @@ async function loadEvacuationRoute(buttonElement) {
                         glowPower: 0.5,
                         color: evacColor
                     });
-                    entity.polyline.width = 6; // Menebalkan jalur evakuasi utama yang adaptif
+                    entity.polyline.width = 6; 
                 }
             }
         }
@@ -173,7 +169,7 @@ async function loadEvacuationRoute(buttonElement) {
 
     } catch (error) {
         console.error("Gagal memuat jaringan jalan:", error);
-        alert("Pastikan file jaringan_jalan_v2.geojson ada di dalam folder 'data/'.");
+        alert("Pastikan file Jaringan Jalan v2.geojson ada di dalam folder 'data/'.");
     } finally {
         showLoading(false);
     }
