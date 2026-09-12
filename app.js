@@ -47,16 +47,33 @@ function showLoading(show, message = "Memuat Data Spasial...") {
     }
 }
 
-// 4. FUNGSI MEMUAT SKENARIO BANJIR (DENGAN OPTIMASI RENDER)
+// Fungsi untuk Mengatur Tombol Mana yang Sedang Aktif
+function setActiveButton(clickedButton) {
+    const buttons = document.querySelectorAll('.control-panel button');
+    buttons.forEach(btn => {
+        if (btn.id !== 'btn-evakuasi') {
+            btn.classList.remove('active');
+        }
+    });
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    }
+}
+
+// 4. FUNGSI MEMUAT SKENARIO BANJIR
 let currentFloodLayer = null;
 
-async function loadFlood(skenario) {
+async function loadFlood(skenario, buttonElement) {
+    setActiveButton(buttonElement);
+
     if (currentFloodLayer) {
         viewer.dataSources.remove(currentFloodLayer);
         currentFloodLayer = null;
     }
 
-    if (skenario === 'normal') return;
+    if (skenario === 'normal') {
+        return; 
+    }
 
     let fileName = '';
     let namaSkenario = '';
@@ -82,7 +99,6 @@ async function loadFlood(skenario) {
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
             if (entity.polygon) {
-                // Styling warna biru transparan dengan outline dimatikan agar render 10x lebih cepat
                 entity.polygon.material = Cesium.Color.fromCssColorString('#3498db').withAlpha(0.6);
                 entity.polygon.outline = false; 
             }
@@ -99,19 +115,22 @@ async function loadFlood(skenario) {
     }
 }
 
-// 5. FUNGSI JALUR EVAKUASI / JARINGAN JALAN
+// 5. FUNGSI JALUR EVAKUASI (DISESUAIKAN DENGAN NAMA FILE TERBARU DI GITHUB)
 let evacuationLayer = null;
 
-async function loadEvacuationRoute() {
+async function loadEvacuationRoute(buttonElement) {
     if (evacuationLayer) {
         viewer.dataSources.remove(evacuationLayer);
         evacuationLayer = null;
+        buttonElement.classList.remove('active');
+        return;
     }
 
     showLoading(true, "Memuat Jaringan Jalan & Jalur Evakuasi...");
 
     try {
-        const roadData = await Cesium.GeoJsonDataSource.load('data/Jaringan Jalan.geojson', {
+        // Menggunakan nama file persis seperti yang ada di folder data/ GitHub Anda
+        const roadData = await Cesium.GeoJsonDataSource.load('data/Jaringan Jalan v2.geojson', {
             clampToGround: true
         });
 
@@ -122,7 +141,6 @@ async function loadEvacuationRoute() {
                 entity.polyline.material = Cesium.Color.WHITE.withAlpha(0.4);
                 entity.polyline.width = 2;
 
-                // Menyoroti beberapa segmen sebagai jalur evakuasi optimal
                 if (i % 15 === 0 && i < 150) { 
                     entity.polyline.material = new Cesium.PolylineGlowMaterialProperty({
                         glowPower: 0.4,
@@ -135,10 +153,11 @@ async function loadEvacuationRoute() {
 
         viewer.dataSources.add(roadData);
         evacuationLayer = roadData;
+        buttonElement.classList.add('active'); 
 
     } catch (error) {
         console.error("Gagal memuat jaringan jalan:", error);
-        alert("Pastikan file Jaringan Jalan.geojson ada di dalam folder 'data/'.");
+        alert("Pastikan file Jaringan Jalan v2.geojson ada di dalam folder 'data/'.");
     } finally {
         showLoading(false);
     }
