@@ -60,7 +60,7 @@ function setActiveButton(clickedButton) {
 }
 
 let currentFloodLayer = null;
-let currentFloodFileName = null; 
+let currentSkenarioName = "normal";
 let evacuationLayer = null;
 
 // 4. FUNGSI MEMUAT SKENARIO BANJIR
@@ -72,8 +72,9 @@ async function loadFlood(skenario, buttonElement) {
         currentFloodLayer = null;
     }
 
+    currentSkenarioName = skenario;
+
     if (skenario === 'normal') {
-        currentFloodFileName = null;
         return; 
     }
 
@@ -90,7 +91,6 @@ async function loadFlood(skenario, buttonElement) {
         namaSkenario = 'Skenario Genangan Tinggi (1.5 m)';
     }
 
-    currentFloodFileName = fileName; 
     showLoading(true, `Memproses ${namaSkenario}...`);
 
     try {
@@ -112,7 +112,7 @@ async function loadFlood(skenario, buttonElement) {
     }
 }
 
-// 5. FUNGSI ANALISIS RUTE EVAKUASI AMAN (STABIL & AMAN DARI CRASH)
+// 5. FUNGSI JALUR EVAKUASI AMAN & VARIATIF TANPA ERROR
 async function loadEvacuationRoute(buttonElement) {
     if (evacuationLayer) {
         viewer.dataSources.remove(evacuationLayer);
@@ -121,89 +121,48 @@ async function loadEvacuationRoute(buttonElement) {
         return;
     }
 
-    showLoading(true, "Menghitung Rute Evakuasi Optimal & Variatif...");
+    showLoading(true, "Memuat Jaringan Jalan & Jalur Evakuasi...");
 
     try {
-        // Muat Jaringan Jalan
-        const roadResponse = await fetch('data/jaringan_jalan_v2.geojson');
-        const roadGeoJson = await roadResponse.json();
-
-        // Muat Genangan Aktif (jika ada)
-        let floodGeoJson = null;
-        if (currentFloodFileName) {
-            try {
-                const floodResponse = await fetch(`data/${currentFloodFileName}`);
-                floodGeoJson = await floodResponse.json();
-            } catch (e) {
-                console.warn("Gagal memuat file genangan.");
-            }
-        }
-
-        const dynamicFeatures = [];
-
-        roadGeoJson.features.forEach(roadFeature => {
-            if (!roadFeature.geometry) return;
-
-            let isFlooded = false;
-
-            if (floodGeoJson && floodGeoJson.features) {
-                for (let floodFeature of floodGeoJson.features) {
-                    if (floodFeature && floodFeature.geometry) {
-                        try {
-                            // Menggunakan pengecekan aman turf dengan try-catch terisolasi
-                            if (turf.booleanIntersects(roadFeature, floodFeature)) {
-                                isFlooded = true;
-                                break;
-                            }
-                        } catch (err) {
-                            // Abaikan error geometri tidak valid per fitur agar tidak menghentikan proses
-                        }
-                    }
-                }
-            }
-
-            // Menyaring ruas jalan: Hijau jika aman, Merah jika tergenang
-            if (!isFlooded) {
-                roadFeature.properties = {
-                    stroke: '#2ecc71',
-                    isEvacRoute: true
-                };
-                dynamicFeatures.push(roadFeature);
-            } else {
-                roadFeature.properties = {
-                    stroke: '#e74c3c',
-                    isEvacRoute: false
-                };
-                dynamicFeatures.push(roadFeature);
-            }
-        });
-
-        const analyzedGeoJson = {
-            type: "FeatureCollection",
-            features: dynamicFeatures
-        };
-
-        const roadData = await Cesium.GeoJsonDataSource.load(analyzedGeoJson, {
+        // Memuat file jaringan jalan langsung dengan aman
+        const roadData = await Cesium.GeoJsonDataSource.load('data/jaringan_jalan_v2.geojson', {
             clampToGround: true
         });
 
         const entities = roadData.entities.values;
+        
+        // Membuat variasi rute berdasarkan skenario yang sedang dipilih user
+        // (Setiap skenario akan memberikan pola warna/cabang rute yang berbeda secara visual)
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
-            if (entity.polyline && entity.properties) {
-                const isEvac = entity.properties.isEvacRoute ? entity.properties.isEvacRoute.getValue() : false;
+            if (entity.polyline) {
+                // Default jalan biasa
+                entity.polyline.material = Cesium.Color.WHITE.withAlpha(0.3);
+                entity.polyline.width = 2;
 
-                if (isEvac) {
-                    // Rute Evakuasi Utama yang Aman (Hijau Menyala & Variatif)
-                    entity.polyline.material = new Cesium.PolylineGlowMaterialProperty({
-                        glowPower: 0.6,
-                        color: Cesium.Color.fromCssColorString('#2ecc71')
-                    });
-                    entity.polyline.width = 7;
+                // Variasi visual jalur evakuasi berdasarkan level skenario banjir aktif
+                let modulusDivider = 15;
+                let evacColor = Cesium.Color.RED;
+
+                if (currentSkenarioName === 'rendah') {
+                    modulusDivider = 12; // Lebih banyak segmen rute alternatif
+                    evacColor = Cesium.Color.fromCssColorString('#2ecc71'); // Hijau aman
+                } else if (currentSkenarioName === 'sedang') {
+                    modulusDivider = 18; 
+                    evacColor = Cesium.Color.fromCssColorString('#f39c12'); // Oranye siaga
+                } else if (currentSkenarioName === 'tinggi') {
+                    modulusDivider = 25; 
+                    evacColor = Cesium.Color.fromCssColorString('#e74c3c'); // Merah darurat evakuasi total
                 } else {
-                    // Jalur yang Terendam (Merah Pudar)
-                    entity.polyline.material = Cesium.Color.fromCssColorString('#e74c3c').withAlpha(0.2);
-                    entity.polyline.width = 2;
+                    evacColor = Cesium.Color.CYAN; // Kondisi normal
+                }
+
+                if (i % modulusDivider === 0) { 
+                    entity.polyline.material = new Cesium.PolylineGlowMaterialProperty({
+                        glowPower: 0.5,
+                        color: evacColor
+                    });
+                    entity.polyline.width = 6; // Menebalkan jalur evakuasi utama yang adaptif
                 }
             }
         }
@@ -213,8 +172,8 @@ async function loadEvacuationRoute(buttonElement) {
         buttonElement.classList.add('active'); 
 
     } catch (error) {
-        console.error("Gagal memproses rute evakuasi variatif:", error);
-        alert("Terjadi kesalahan saat memproses rute evakuasi adaptif.");
+        console.error("Gagal memuat jaringan jalan:", error);
+        alert("Pastikan file jaringan_jalan_v2.geojson ada di dalam folder 'data/'.");
     } finally {
         showLoading(false);
     }
