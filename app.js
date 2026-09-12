@@ -20,7 +20,7 @@ const posisiKameraPesawaran = {
     destination: Cesium.Cartesian3.fromDegrees(105.265, -5.565, 12000), 
     orientation: {
         heading: Cesium.Math.toRadians(0.0), 
-        pitch: Cesium.Math.toRadians(-90.0), // Tampilan tegak lurus dari atas
+        pitch: Cesium.Math.toRadians(-90.0), 
         roll: 0.0
     }
 };
@@ -89,7 +89,6 @@ async function loadEvacuationRoute() {
     }
 
     try {
-        // Memanggil file Jaringan Jalan.geojson sesuai nama di GitHub
         const roadData = await Cesium.GeoJsonDataSource.load('data/Jaringan Jalan.geojson', {
             clampToGround: true
         });
@@ -105,7 +104,6 @@ async function loadEvacuationRoute() {
         viewer.dataSources.add(roadData);
         evacuationLayer = roadData;
 
-        // Simulasi Visualisasi Garis Jalur Evakuasi Optimal
         viewer.entities.add({
             name: 'Jalur Evakuasi Darurat',
             polyline: {
