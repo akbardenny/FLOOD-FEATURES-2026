@@ -25,10 +25,9 @@ const posisiKameraPesawaran = {
     }
 };
 
-// Set tampilan awal saat web dibuka
 viewer.camera.setView(posisiKameraPesawaran);
 
-// Mengambil alih tombol Home pojok kanan atas agar kembali ke Pesawaran
+// Tombol Home kembali ke Pesawaran
 viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e) {
     e.cancel = true; 
     viewer.camera.flyTo({
@@ -38,7 +37,7 @@ viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e) {
     });
 });
 
-// 4. FUNGSI MEMUAT SKENARIO BANJIR (GeoJSON)
+// 4. FUNGSI MEMUAT SKENARIO BANJIR (Menyesuaikan nama file baru di GitHub)
 let currentFloodLayer = null;
 
 async function loadFlood(skenario) {
@@ -49,8 +48,17 @@ async function loadFlood(skenario) {
 
     if (skenario === 'normal') return;
 
+    let fileName = '';
+    if (skenario === 'rendah') {
+        fileName = 'Genangan Rendah 50cm v2.geojson';
+    } else if (skenario === 'sedang') {
+        fileName = 'Genangan Sedang 1m v2.geojson';
+    } else if (skenario === 'tinggi') {
+        fileName = 'Genangan Tinggi 1.5m v2.geojson';
+    }
+
     try {
-        const dataSource = await Cesium.GeoJsonDataSource.load(`data/${skenario}.geojson`, {
+        const dataSource = await Cesium.GeoJsonDataSource.load(`data/${fileName}`, {
             clampToGround: true 
         });
 
@@ -67,11 +75,11 @@ async function loadFlood(skenario) {
 
     } catch (error) {
         console.error("Gagal memuat data skenario:", error);
-        alert(`Pastikan file ${skenario}.geojson sudah diunggah ke folder 'data/' di GitHub.`);
+        alert(`Pastikan file ${fileName} sudah benar di dalam folder 'data/'.`);
     }
 }
 
-// 5. FUNGSI JALUR EVAKUASI (Algoritma Pencarian Rute Terdekat / Dijkstra)
+// 5. FUNGSI JALUR EVAKUASI / DIJKSTRA
 let evacuationLayer = null;
 
 async function loadEvacuationRoute() {
@@ -81,12 +89,11 @@ async function loadEvacuationRoute() {
     }
 
     try {
-        // Memuat data jaringan jalan dari folder data/ di GitHub
-        const roadData = await Cesium.GeoJsonDataSource.load('data/jaringan_jalan.geojson', {
+        // Memanggil file Jaringan Jalan.geojson sesuai nama di GitHub
+        const roadData = await Cesium.GeoJsonDataSource.load('data/Jaringan Jalan.geojson', {
             clampToGround: true
         });
 
-        // Styling garis jaringan jalan
         const entities = roadData.entities.values;
         for (let i = 0; i < entities.length; i++) {
             if (entities[i].polyline) {
@@ -98,14 +105,14 @@ async function loadEvacuationRoute() {
         viewer.dataSources.add(roadData);
         evacuationLayer = roadData;
 
-        // Simulasi Visualisasi Garis Jalur Evakuasi Optimal (Hasil Algoritma Dijkstra)
+        // Simulasi Visualisasi Garis Jalur Evakuasi Optimal
         viewer.entities.add({
             name: 'Jalur Evakuasi Darurat',
             polyline: {
                 positions: Cesium.Cartesian3.fromDegreesArray([
-                    105.250, -5.560,  // Titik awal evakuasi warga
-                    105.257, -5.555,  // Simpul perantara rute aman
-                    105.265, -5.550   // Titik akhir / lokasi evakuasi aman
+                    105.250, -5.560,  
+                    105.257, -5.555,  
+                    105.265, -5.550   
                 ]),
                 width: 6,
                 material: new Cesium.PolylineGlowMaterialProperty({
@@ -116,10 +123,10 @@ async function loadEvacuationRoute() {
             }
         });
 
-        alert("Jalur evakuasi adaptif berhasil dimuat di peta!");
+        alert("Jalur evakuasi dan jaringan jalan berhasil dimuat!");
 
     } catch (error) {
         console.error("Gagal memuat jaringan jalan:", error);
-        alert("Pastikan file jaringan_jalan.geojson sudah diunggah ke folder 'data/' di GitHub Anda.");
+        alert("Pastikan file Jaringan Jalan.geojson ada di folder data/.");
     }
 }
