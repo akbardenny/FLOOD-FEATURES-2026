@@ -9,10 +9,10 @@
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     
-    <!-- Memanggil Library Turf.js untuk Analisis Jalur Evakuasi -->
+    <!-- Memanggil Library Turf.js untuk Analisis Spasial -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
     
-    <!-- Memanggil file desain Anda -->
+    <!-- Memanggil file desain -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -26,21 +26,20 @@
         <hr>
         <h3>Skenario Genangan Banjir</h3>
         <button onclick="loadFlood('normal')">Kondisi Normal</button>
-        <button onclick="loadFlood('skenario1')">Banjir Rendah (Risiko Rendah)</button>
-        <button onclick="loadFlood('skenario3')">Banjir Sedang (Risiko Sedang)</button>
-        <button onclick="loadFlood('skenario3')">Banjir Tinggi (Risiko Tinggi)</button>
-        <button onclick="loadFlood('skenario5')">Banjir Esktrem (Risiko Bahaya)</button>
+        <button onclick="loadFlood('rendah')">Skenario Rendah (50 cm)</button>
+        <button onclick="loadFlood('sedang')">Skenario Sedang (1 m)</button>
+        <button onclick="loadFlood('tinggi')">Skenario Tinggi (1.5 m)</button>
         
         <hr>
         <h3>Mitigasi & Evakuasi</h3>
         <button onclick="loadEvacuationRoute()" style="background-color: #e74c3c;">Tampilkan Jalur Evakuasi</button>
 
         <div class="keterangan">
-            <p><strong>Note:</strong> Pilih skenario atau jalur evakuasi untuk melihat simulasi 3D.</p>
+            <p><strong>Note:</strong> Pilih skenario genangan atau jalur evakuasi untuk melihat simulasi 3D.</p>
         </div>
     </div>
 
-    <!-- Memanggil file logika peta Anda -->
+    <!-- Memanggil file logika peta -->
     <script src="app.js"></script>
 </body>
 </html>
