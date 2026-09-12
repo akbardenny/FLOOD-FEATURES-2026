@@ -37,7 +37,7 @@ viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e) {
     });
 });
 
-// 4. FUNGSI MEMUAT SKENARIO BANJIR (Menyesuaikan nama file baru di GitHub)
+// 4. FUNGSI MEMUAT SKENARIO BANJIR (Sesuai nama file persis di folder data/)
 let currentFloodLayer = null;
 
 async function loadFlood(skenario) {
