@@ -37,7 +37,15 @@ viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e) {
     });
 });
 
-// 4. FUNGSI MEMUAT SKENARIO BANJIR
+// Fungsi pembantu untuk mengontrol tampilan Loading Overlay
+function showLoading(show) {
+    const loader = document.getElementById('loadingOverlay');
+    if (loader) {
+        loader.style.display = show ? 'flex' : 'none';
+    }
+}
+
+// 4. FUNGSI MEMUAT SKENARIO BANJIR DENGAN LOADING
 let currentFloodLayer = null;
 
 async function loadFlood(skenario) {
@@ -56,6 +64,8 @@ async function loadFlood(skenario) {
     } else if (skenario === 'tinggi') {
         fileName = 'Genangan Tinggi 1.5m v2.geojson';
     }
+
+    showLoading(true); // Tampilkan loading
 
     try {
         const dataSource = await Cesium.GeoJsonDataSource.load(`data/${fileName}`, {
@@ -76,10 +86,12 @@ async function loadFlood(skenario) {
     } catch (error) {
         console.error("Gagal memuat data skenario:", error);
         alert(`Pastikan file ${fileName} sudah benar di dalam folder 'data/'.`);
+    } finally {
+        showLoading(false); // Sembunyikan loading setelah selesai (baik sukses maupun gagal)
     }
 }
 
-// 5. FUNGSI JALUR EVAKUASI MENGIKUTI JARINGAN JALAN ASLI
+// 5. FUNGSI JALUR EVAKUASI DENGAN LOADING
 let evacuationLayer = null;
 
 async function loadEvacuationRoute() {
@@ -88,30 +100,26 @@ async function loadEvacuationRoute() {
         evacuationLayer = null;
     }
 
+    showLoading(true); // Tampilkan loading
+
     try {
-        // Memuat file Jaringan Jalan.geojson
         const roadData = await Cesium.GeoJsonDataSource.load('data/Jaringan Jalan.geojson', {
             clampToGround: true
         });
 
         const entities = roadData.entities.values;
-        
-        // Memisahkan jalan biasa dengan jalur evakuasi optimal (menyerupai hasil Dijkstra)
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
             if (entity.polyline) {
-                // Styling default jaringan jalan (warna putih transparan tipis)
                 entity.polyline.material = Cesium.Color.WHITE.withAlpha(0.4);
                 entity.polyline.width = 2;
 
-                // Logika penandaan segmen jalur evakuasi darurat berdasarkan urutan data jalan
-                // (Mengambil beberapa segmen jalan utama untuk disorot merah menyala)
                 if (i % 15 === 0 && i < 150) { 
                     entity.polyline.material = new Cesium.PolylineGlowMaterialProperty({
                         glowPower: 0.4,
                         color: Cesium.Color.RED
                     });
-                    entity.polyline.width = 6; // Menebalkan jalur evakuasi agar mengikuti lekukan jalan asli
+                    entity.polyline.width = 6; 
                 }
             }
         }
@@ -119,10 +127,10 @@ async function loadEvacuationRoute() {
         viewer.dataSources.add(roadData);
         evacuationLayer = roadData;
 
-        alert("Jaringan jalan dan rute evakuasi optimal berbasis geometri jalan berhasil dimuat!");
-
     } catch (error) {
         console.error("Gagal memuat jaringan jalan:", error);
         alert("Pastikan file Jaringan Jalan.geojson ada di folder data/.");
+    } finally {
+        showLoading(false); // Sembunyikan loading
     }
 }
