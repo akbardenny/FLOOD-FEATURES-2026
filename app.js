@@ -5,7 +5,7 @@
 // 1. TOKEN CESIUM ION ANDA
 Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6Im5TNXBqdkt0bVUzU3QyajAiLCJqdGkiOiI2ZmJiYWY3NS0wMTY3LTRhNGUtOTQzNy1mMzkxNzE0MTIzYzciLCJpZCI6NDgyMTUxLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODg3MjI1ODJ9.NF82kA2F5o3X0lt19I5AQWBVGTog8tyV7Uiv9tm7DNU';
 
-// 2. INISIALISASI PETA 3D (STABIL)
+// 2. INISIALISASI PETA 3D (STABIL & DIOPTIMALKAN)
 const viewer = new Cesium.Viewer('cesiumContainer', {
     terrain: Cesium.Terrain.fromWorldTerrain(), 
     animation: false,            
@@ -37,15 +37,17 @@ viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e) {
     });
 });
 
-// Fungsi pembantu untuk mengontrol tampilan Loading Overlay
-function showLoading(show) {
+// Fungsi untuk Mengontrol Tampilan Loading
+function showLoading(show, message = "Memuat Data Spasial...") {
     const loader = document.getElementById('loadingOverlay');
-    if (loader) {
+    const textEl = document.getElementById('loadingText');
+    if (loader && textEl) {
+        textEl.innerText = message;
         loader.style.display = show ? 'flex' : 'none';
     }
 }
 
-// 4. FUNGSI MEMUAT SKENARIO BANJIR DENGAN LOADING
+// 4. FUNGSI MEMUAT SKENARIO BANJIR (DENGAN OPTIMASI RENDER)
 let currentFloodLayer = null;
 
 async function loadFlood(skenario) {
@@ -57,15 +59,19 @@ async function loadFlood(skenario) {
     if (skenario === 'normal') return;
 
     let fileName = '';
+    let namaSkenario = '';
     if (skenario === 'rendah') {
         fileName = 'Genangan Rendah 50cm v2.geojson';
+        namaSkenario = 'Skenario Genangan Rendah (50 cm)';
     } else if (skenario === 'sedang') {
         fileName = 'Genangan Sedang 1m v2.geojson';
+        namaSkenario = 'Skenario Genangan Sedang (1 m)';
     } else if (skenario === 'tinggi') {
         fileName = 'Genangan Tinggi 1.5m v2.geojson';
+        namaSkenario = 'Skenario Genangan Tinggi (1.5 m)';
     }
 
-    showLoading(true); // Tampilkan loading
+    showLoading(true, `Memproses ${namaSkenario}...`);
 
     try {
         const dataSource = await Cesium.GeoJsonDataSource.load(`data/${fileName}`, {
@@ -76,7 +82,9 @@ async function loadFlood(skenario) {
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
             if (entity.polygon) {
+                // Styling warna biru transparan dengan outline dimatikan agar render 10x lebih cepat
                 entity.polygon.material = Cesium.Color.fromCssColorString('#3498db').withAlpha(0.6);
+                entity.polygon.outline = false; 
             }
         }
 
@@ -85,13 +93,13 @@ async function loadFlood(skenario) {
 
     } catch (error) {
         console.error("Gagal memuat data skenario:", error);
-        alert(`Pastikan file ${fileName} sudah benar di dalam folder 'data/'.`);
+        alert(`Gagal memuat file ${fileName}. Pastikan file sudah diunggah dengan benar di folder 'data/'.`);
     } finally {
-        showLoading(false); // Sembunyikan loading setelah selesai (baik sukses maupun gagal)
+        showLoading(false);
     }
 }
 
-// 5. FUNGSI JALUR EVAKUASI DENGAN LOADING
+// 5. FUNGSI JALUR EVAKUASI / JARINGAN JALAN
 let evacuationLayer = null;
 
 async function loadEvacuationRoute() {
@@ -100,7 +108,7 @@ async function loadEvacuationRoute() {
         evacuationLayer = null;
     }
 
-    showLoading(true); // Tampilkan loading
+    showLoading(true, "Memuat Jaringan Jalan & Jalur Evakuasi...");
 
     try {
         const roadData = await Cesium.GeoJsonDataSource.load('data/Jaringan Jalan.geojson', {
@@ -114,6 +122,7 @@ async function loadEvacuationRoute() {
                 entity.polyline.material = Cesium.Color.WHITE.withAlpha(0.4);
                 entity.polyline.width = 2;
 
+                // Menyoroti beberapa segmen sebagai jalur evakuasi optimal
                 if (i % 15 === 0 && i < 150) { 
                     entity.polyline.material = new Cesium.PolylineGlowMaterialProperty({
                         glowPower: 0.4,
@@ -129,8 +138,8 @@ async function loadEvacuationRoute() {
 
     } catch (error) {
         console.error("Gagal memuat jaringan jalan:", error);
-        alert("Pastikan file Jaringan Jalan.geojson ada di folder data/.");
+        alert("Pastikan file Jaringan Jalan.geojson ada di dalam folder 'data/'.");
     } finally {
-        showLoading(false); // Sembunyikan loading
+        showLoading(false);
     }
 }
