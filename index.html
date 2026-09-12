@@ -9,23 +9,71 @@
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     
-    <!-- Memanggil Library Turf.js untuk Analisis Spasial -->
+    <!-- Memanggil Library Turf.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
     
-    <!-- Memanggil file desain -->
-    <link rel="stylesheet" href="style.css">
+    <!-- Styling Internal untuk Memastikan Loading Pasti Tampil -->
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #cesiumContainer { width: 100%; height: 100%; }
+
+        .control-panel {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(255, 255, 255, 0.95); padding: 20px;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            width: 280px; z-index: 10; backdrop-filter: blur(5px);
+        }
+        .control-panel h2 { margin: 0 0 5px 0; color: #004080; font-size: 22px; }
+        .control-panel p { margin: 0 0 15px 0; font-size: 13px; color: #555; }
+        .control-panel h3 { font-size: 15px; margin-bottom: 12px; color: #333; }
+        
+        button {
+            display: block; width: 100%; padding: 10px; margin-bottom: 10px;
+            background-color: #2980b9; color: white; border: none;
+            border-radius: 5px; font-weight: bold; cursor: pointer;
+        }
+        button:hover { opacity: 0.9; }
+        hr { border: 0; border-top: 1px solid #ccc; margin: 15px 0; }
+        
+        .keterangan {
+            margin-top: 15px; padding: 10px; background-color: #f1f8ff;
+            border-left: 4px solid #2980b9; border-radius: 3px; font-size: 12px;
+        }
+
+        /* GAYA LOADING SPINNER */
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: none;
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 99999; color: white; font-weight: bold; font-size: 18px;
+        }
+        .spinner {
+            width: 60px; height: 60px; border: 6px solid rgba(255, 255, 255, 0.3);
+            border-top: 6px solid #3498db; border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media screen and (max-width: 768px) {
+            .control-panel { top: auto; bottom: 0; left: 0; width: 100%; border-radius: 20px 20px 0 0; max-height: 45vh; overflow-y: auto; }
+        }
+    </style>
 </head>
 <body>
-    <!-- Kontainer untuk Peta 3D -->
     <div id="cesiumContainer"></div>
     
-    <!-- INDIKATOR LOADING (Tampil saat memuat data) -->
-    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <!-- ELEMEN LOADING DIJAMIN MUNCUL -->
+    <div id="loadingOverlay">
         <div class="spinner"></div>
-        <p>Memuat Data Spasial...</p>
+        <div>Memuat Data Skenario Banjir...</div>
     </div>
 
-    <!-- Panel Kontrol Skenario & Mitigasi -->
     <div class="control-panel">
         <h2>FLOOD FUTURES</h2>
         <p>Desa Sidodadi, Teluk Pandan, Pesawaran</p>
@@ -45,7 +93,6 @@
         </div>
     </div>
 
-    <!-- Memanggil file logika peta -->
     <script src="app.js"></script>
 </body>
 </html>
