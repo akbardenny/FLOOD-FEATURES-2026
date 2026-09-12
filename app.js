@@ -60,7 +60,7 @@ function setActiveButton(clickedButton) {
     }
 }
 
-// 4. FUNGSI MEMUAT SKENARIO BANJIR
+// 4. FUNGSI MEMUAT SKENARIO BANJIR (DENGAN PERCEPATAN RENDER TANPA LOOP BERAT)
 let currentFloodLayer = null;
 
 async function loadFlood(skenario, buttonElement) {
@@ -91,18 +91,13 @@ async function loadFlood(skenario, buttonElement) {
     showLoading(true, `Memproses ${namaSkenario}...`);
 
     try {
+        // Menggunakan parameter langsung di load() agar Cesium merender warna secara masal tanpa proses loop script yang lambat
         const dataSource = await Cesium.GeoJsonDataSource.load(`data/${fileName}`, {
-            clampToGround: true 
+            clampToGround: true,
+            stroke: Cesium.Color.TRANSPARENT,
+            strokeWidth: 0,
+            fill: Cesium.Color.fromCssColorString('#3498db').withAlpha(0.6)
         });
-
-        const entities = dataSource.entities.values;
-        for (let i = 0; i < entities.length; i++) {
-            const entity = entities[i];
-            if (entity.polygon) {
-                entity.polygon.material = Cesium.Color.fromCssColorString('#3498db').withAlpha(0.6);
-                entity.polygon.outline = false; 
-            }
-        }
 
         viewer.dataSources.add(dataSource);
         currentFloodLayer = dataSource;
@@ -115,7 +110,7 @@ async function loadFlood(skenario, buttonElement) {
     }
 }
 
-// 5. FUNGSI JALUR EVAKUASI (DISESUAIKAN DENGAN NAMA FILE TERBARU DI GITHUB)
+// 5. FUNGSI JALUR EVAKUASI
 let evacuationLayer = null;
 
 async function loadEvacuationRoute(buttonElement) {
@@ -129,7 +124,6 @@ async function loadEvacuationRoute(buttonElement) {
     showLoading(true, "Memuat Jaringan Jalan & Jalur Evakuasi...");
 
     try {
-        // Menggunakan nama file persis seperti yang ada di folder data/ GitHub Anda
         const roadData = await Cesium.GeoJsonDataSource.load('data/Jaringan Jalan v2.geojson', {
             clampToGround: true
         });
