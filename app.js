@@ -112,7 +112,7 @@ async function loadFlood(skenario, buttonElement) {
     }
 }
 
-// 5. FUNGSI ANALISIS RUTE EVAKUASI DINAMIS & VARIATIF BERBASIS TURF.JS
+// 5. FUNGSI ANALISIS RUTE EVAKUASI AMAN (STABIL & AMAN DARI CRASH)
 async function loadEvacuationRoute(buttonElement) {
     if (evacuationLayer) {
         viewer.dataSources.remove(evacuationLayer);
@@ -139,7 +139,6 @@ async function loadEvacuationRoute(buttonElement) {
             }
         }
 
-        // Filter dan Kategorisasi Ruas Jalan Berdasarkan Skenario Banjir
         const dynamicFeatures = [];
 
         roadGeoJson.features.forEach(roadFeature => {
@@ -147,34 +146,32 @@ async function loadEvacuationRoute(buttonElement) {
 
             let isFlooded = false;
 
-            if (floodGeoJson) {
+            if (floodGeoJson && floodGeoJson.features) {
                 for (let floodFeature of floodGeoJson.features) {
-                    if (floodFeature.geometry) {
+                    if (floodFeature && floodFeature.geometry) {
                         try {
-                            // Cek apakah ruas jalan bersinggungan dengan area banjir
+                            // Menggunakan pengecekan aman turf dengan try-catch terisolasi
                             if (turf.booleanIntersects(roadFeature, floodFeature)) {
                                 isFlooded = true;
                                 break;
                             }
-                        } catch (err) {}
+                        } catch (err) {
+                            // Abaikan error geometri tidak valid per fitur agar tidak menghentikan proses
+                        }
                     }
                 }
             }
 
-            // Variasi Rute: Hanya ambil jalan yang TIDAK TERGENANG untuk dijadikan koridor evakuasi utama
+            // Menyaring ruas jalan: Hijau jika aman, Merah jika tergenang
             if (!isFlooded) {
-                // Jalan Aman: Diberi bobot visual sebagai rute evakuasi utama yang aktif & variatif
                 roadFeature.properties = {
                     stroke: '#2ecc71',
-                    strokeWidth: 5,
                     isEvacRoute: true
                 };
                 dynamicFeatures.push(roadFeature);
             } else {
-                // Jalan Terendam: Ditampilkan tipis transparan berwarna merah sebagai jalur yang terblokir
                 roadFeature.properties = {
                     stroke: '#e74c3c',
-                    strokeWidth: 2,
                     isEvacRoute: false
                 };
                 dynamicFeatures.push(roadFeature);
@@ -195,17 +192,16 @@ async function loadEvacuationRoute(buttonElement) {
             const entity = entities[i];
             if (entity.polyline && entity.properties) {
                 const isEvac = entity.properties.isEvacRoute ? entity.properties.isEvacRoute.getValue() : false;
-                const strokeColor = entity.properties.stroke ? entity.properties.stroke.getValue() : '#2ecc71';
 
                 if (isEvac) {
-                    // Rute Evakuasi Utama yang Aman (Menyala, Berbeda di tiap skenario)
+                    // Rute Evakuasi Utama yang Aman (Hijau Menyala & Variatif)
                     entity.polyline.material = new Cesium.PolylineGlowMaterialProperty({
                         glowPower: 0.6,
                         color: Cesium.Color.fromCssColorString('#2ecc71')
                     });
                     entity.polyline.width = 7;
                 } else {
-                    // Jalur yang Terendam (Merah Pudar / Dihindari)
+                    // Jalur yang Terendam (Merah Pudar)
                     entity.polyline.material = Cesium.Color.fromCssColorString('#e74c3c').withAlpha(0.2);
                     entity.polyline.width = 2;
                 }
